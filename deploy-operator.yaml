@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mysql-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mysql-operator-sa
+  namespace: mysql-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-operator
+  namespace: mysql-operator
+  labels:
+    version: "1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: mysql-operator
+  template:
+    metadata:
+      labels:
+        name: mysql-operator
+    spec:
+      containers:
+        - name: mysql-operator
+          image: iad.ocir.io/idazzjlcjqzj/ivan-cs.ma/mysql-operator/mysql-shell:8.0.24
+          imagePullPolicy: Always
+          args: ["mysqlsh", "--pym", "mysqloperator", "operator"]
+          env:
+            - name: MYSQL_OPERATOR_DEBUG
+              value: "1"
+            - name: MYSQL_OPERATOR_DEFAULT_REPOSITORY
+              value: "iad.ocir.io/idazzjlcjqzj/ivan-cs.ma/mysql-operator"
+      imagePullSecrets:
+          - name: ivanma-secret-mysql-operator
+      serviceAccountName: mysql-operator-sa
