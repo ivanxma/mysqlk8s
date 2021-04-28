@@ -3,12 +3,11 @@ kind: Service
 metadata:
   name: nodetestapp-svc
   labels:
-    app: nodetestapp
+    app: nodetestapp-lb
 spec:
   type: LoadBalancer
   ports:
   - port: 80
-    targetPort: 8080
-    nodePort: 30007
+    targetPort: 8181
   selector:
-    app: nodetestapp-service
+    app: nodetestapp-pod
