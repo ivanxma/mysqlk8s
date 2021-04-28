@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: node-auth
+type: kubernetes.io/basic-auth 
+stringData:
+  username: node
+  password: pass 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodetestapp
+  labels:
+    app: nodetestapp
+spec:
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: nodetestapp-pod
+  template:
+    metadata:
+      labels:
+        app: nodetestapp-pod
+    spec:
+      imagePullSecrets:
+        - name: ivanma-secret-mysql-operator
+      containers:
+      - name: nodetestapp
+        image: iad.ocir.io/idazzjlcjqzj/ivan-cs.ma/nodetestapp:1.0
+        imagePullPolicy: Always 
+        ports:
+        - containerPort: 8181
+        env:
+        - name: MYSQL_SERVICE_NAMESPACE
+          value: "ic04"
+        - name: MYSQL_SERVICE_NAME
+          value: "mycluster"
+        - name: MYSQL_SERVICE_PORT
+          value: "mysqlx"
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: node-auth
+              key: username
+        - name: MYSQL_PASS
+          valueFrom:
+            secretKeyRef:
+              name: node-auth
+              key: password
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nodetestapp-service
+  name: nodetestapp-service 
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8181 
+    nodePort: 30007
+  selector:
+    app: nodetestapp-pod
+  type: NodePort

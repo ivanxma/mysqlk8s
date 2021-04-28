@@ -1,0 +1,11 @@
+{
+  "name": "nodeapp", 
+  "version": "1.0.0", 
+  "description": "", 
+  "main": "index.js", 
+  "author": "", 
+  "license": "", 
+  "dependencies": {
+    "@mysql/xdevapi": "^8.0.23" 
+  }
+}
