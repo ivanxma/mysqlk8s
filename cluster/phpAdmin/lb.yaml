@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-phpmyadmin-svc
+  labels:
+    name: phpmyadmin
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    name: phpmyadmin

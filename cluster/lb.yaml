@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: router-lb
+  labels:
+    app: router-lb
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 6446
+    targetPort: 6446
+  selector:
+    component: mysqlrouter

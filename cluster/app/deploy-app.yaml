@@ -33,7 +33,7 @@ spec:
         - containerPort: 8181
         env:
         - name: MYSQL_SERVICE_NAMESPACE
-          value: "ic04"
+          value: "NSNAME"
         - name: MYSQL_SERVICE_NAME
           value: "mycluster"
         - name: MYSQL_SERVICE_PORT
@@ -60,7 +60,6 @@ spec:
   ports:
   - port: 8080
     targetPort: 8181 
-    nodePort: 30007
   selector:
     app: nodetestapp-pod
   type: NodePort
