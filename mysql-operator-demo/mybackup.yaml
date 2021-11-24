@@ -1,0 +1,17 @@
+apiVersion: mysql.oracle.com/v2alpha1
+kind: MySQLBackup
+metadata:
+  name: dump-test1
+  namespace: my01
+spec:
+  clusterName: mycluster
+  backupProfile:
+    name: dump-instance-profile-oci-adhoc
+    dumpInstance:
+      dumpOptions:
+        excludeSchemas: ["excludeme"]
+      storage:
+        ociObjectStorage:
+          bucketName: mybucket-operator
+          credentials: oci-credentials
+
