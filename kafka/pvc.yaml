@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: datadir-kafka-demo-0
+  labels:
+    type: kafka-pvc
+spec:
+  storageClassName: oci
+  resources:
+    requests:
+      storage: 100Gi
+  accessModes:
+    - ReadWriteOnce
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: datadir-kafka-demo-1
+  labels:
+    type: localClaim
+spec:
+  storageClassName: oci
+  resources:
+    requests:
+      storage: 100Gi
+  accessModes:
+    - ReadWriteOnce
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: datadir-kafka-demo-2
+  labels:
+    type: localClaim
+spec:
+  storageClassName: oci
+  resources:
+    requests:
+      storage: 100Gi
+  accessModes:
+    - ReadWriteOnce
