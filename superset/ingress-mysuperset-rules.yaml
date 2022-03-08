@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: superset-ing
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/app-root: /mysuperset/
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      rewrite ^/superset/(.*)$ /mysuperset/superset/$1 redirect;
+      rewrite ^/static/(.*)$ /mysuperset/static/$1 redirect;
+      rewrite ^/chart/(.*)$ /mysuperset/chart/$1 redirect;
+      rewrite ^/api/(.*)$ /mysuperset/api/$1 redirect;
+      rewrite ^/users/(.*)$ /mysuperset/users/$1 redirect;
+      rewrite ^/databaseview/(.*)$ /mysuperset/databaseview/$1 redirect;
+      rewrite ^/dashboard/(.*)$ /mysuperset/dashboard/$1 redirect;
+      rewrite ^/savedqueryview/(.*)$ /mysuperset/savedqueryview/$1 redirect;
+      rewrite ^/roles/(.*)$ /mysuperset/roles/$1 redirect;
+      rewrite ^/logout/(.*)$ /mysuperset/logout/$1 redirect;
+      rewrite ^/login/(.*)$ /mysuperset/login/$1 redirect;
+      rewrite ^/logmodelview/(.*)$ /mysuperset/logmodelview/$1 redirect;
+      rewrite ^/rowlevelsecurityfiltersmodelview/(.*)$ /mysuperset/rowlevelsecurityfiltersmodelview/$1 redirect;
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: superset
+    http:
+      paths:
+        - path: /mysuperset(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: superset
+              port:
+                number: 8088
