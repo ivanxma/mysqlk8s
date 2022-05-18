@@ -58,8 +58,27 @@ kubectl get pod -n mysql-operator --watch
 ```
 
 8. Install mysql-innodbcluster (package: p34110382_800_Generic)
+- Get parameters for Innodb Cluster settings 
+
 ```
 cd p34110382_800_Generic/helm
+helm show values mysql-operator > ic.values
+```
+
+- Append the following sections to ic.values (make changes to the username/password
+```
+credentials:
+  root:
+    user: root
+    password: sakila
+    host: "%"
+
+tls:
+  useSelfSigned: true
+```
+
+-  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
+```
 helm install myclluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --create-namespace --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullPolicy='Always' -f ic.values
 ```
 
