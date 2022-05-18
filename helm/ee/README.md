@@ -62,7 +62,7 @@ kubectl get pod -n mysql-operator --watch
 
 ```
 cd p34110382_800_Generic/helm
-helm show values mysql-operator > ic.values
+helm show values  ./mysql-operator-2.0.4.tgz > ic.values
 ```
 
 - Append the following sections to ic.values (make changes to the username/password
