@@ -58,7 +58,7 @@ kubectl get pod -n mysql-operator --watch
 ```
 
 8. Install mysql-innodbcluster (package: p34110382_800_Generic)
-- Get parameters for Innodb Cluster settings 
+- Get parameters for Innodb Cluster settings   (make sure the current folder is on the helm folder)
 
 ```
 cd p34110382_800_Generic/helm
