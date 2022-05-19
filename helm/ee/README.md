@@ -13,7 +13,7 @@
     - ivanxma/enterprise-server     
     - ivanxma/enterprise-router
 
-3. On machine with docker CLI, load the images including [ mysql-operator, enterprise-server, enterprise-router ]
+3. On machine with docker CLI, load the images including [ enterprise--operator, enterprise-server, enterprise-router ]
 ```
 docker load -i ./mysql-enterprise-router-8.0.29.tar
 docker load -i ./mysql-enterprise-server-8.0.29.tar
