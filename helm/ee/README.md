@@ -83,16 +83,18 @@ tls:
 helm install myclluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --create-namespace --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullPolicy='Always' -f ic.values
 ```
 
-- wait util all deployed and running
+- wait util all pods and innodb cluster are deployed, and they are online & running
 ```
-kubectl get pod -n myic-demo --watch
+kubectl get pod -n myic-demo 
+kubectl get ic -n myic-demo 
 ```
 
 9. Test mysql login
+- Using port-forward to get local 3306 port to connect to the service/mycluster (ROUTER service)
+- and Connecting to router service using mysql client.  The user/password is given in the previous appended ic.values.
 
 ```
 kubectl port-forward svc/mycluster -n myic-demo 3306 &
-
 mysql -uroot -h127.0.0.1 -P3306 -p<the password>
 ```
 
