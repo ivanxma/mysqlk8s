@@ -27,7 +27,7 @@ docker image ls
     - ivanxma/enterprise-server 
     - ivanxma/enterprise-router
   - check the registry namespace in OCI tenancy.  
-    - as such the <namespace>/ivanxma is the REPO environment variable
+    - as such the &lt;namespace&gt;/ivanxma is the REPO environment variable
 
 5 On machine with docker CLI, tag the images to OCI registry accordingly  (noted : the following repository might be removed without notice)
 ```
