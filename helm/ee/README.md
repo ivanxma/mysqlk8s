@@ -80,7 +80,7 @@ tls:
 
 -  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
 ```
-helm install myclluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --create-namespace --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullPolicy='Always' -f ic.values
+helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --create-namespace --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  -f ic.values
 ```
 
 - wait util all pods and innodb cluster are deployed, and they are online & running
@@ -97,5 +97,53 @@ kubectl get ic -n myic-demo
 kubectl port-forward svc/mycluster -n myic-demo 3306 &
 mysql -uroot -h127.0.0.1 -P3306 -p<the password>
 ```
+
+---
+## Additional operations for Innodb Cluster
+
+1. Running mysqlsh within the container "sidecar"
+```
+kubectl exec -it mycluster-0 -n myic-demo -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 -e " print(dba.getCluster().status())"
+```
+
+
+2. Running SQL mode with MySQL Shell connecting to the 3 nodes using hostname
+```
+kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-1.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-2.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname, @@port;"
+```
+
+3. Creating demo data with the Innodb Cluster
+```
+kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.myic-demo.svc.cluster.local -e "create database demo;create table demo.mytable (f1 int not null primary key, f2 varchar(20));insert into demo.mytable values (1, 'aaa');"
+```
+
+4. Rollout restart the statefulset with mycluster
+- The pod(s) will be terminated and re-initialized one by one.   
+
+```
+kubectl get statefulset -n myic-demo
+kubectl rollout restart statefulset mycluster -n myic-demo
+kubectl get pod -n myic-demo --watch
+```
+- Press **CTRL-C** to cancel the 'watch'
+- Reselect the data and after all nodes restarted (recreated), data is still there
+```
+kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname,@@port,a.* from demo.mytable;"
+```
+
+5. Check IC status
+```
+kubectl get ic -n myic-demo
+```
+
+6. Showing the logs for pod (on each node)
+```
+kubectl logs mycluster-2 -c mysql -n myic-demo
+kubectl logs mycluster-1 -c mysql -n myic-demo
+kubectl logs mycluster-0 -c mysql -n myic-demo
+```
+
 
 # Done - you have finished deployment using enterprise package
