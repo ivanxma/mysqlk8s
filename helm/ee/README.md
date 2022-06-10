@@ -36,7 +36,7 @@ docker tag mysql/enterprise-router:8.0 [region].ocir.io/[Namespace]/[prefix]/ent
 docker tag mysql/enterprise-operator:8.0.29-2.0.4 [region].ocir.io/[Namespace]/[prefix]/enterprise-operator:8.0.29-2.0.4
 ```
 ---
-On OCI Console, notedown the following regarding registry namespace and authentication token.  
+On OCI Console, note down the following regarding registry namespace and authentication token.  
 - How can you locate the Registry Namespace?
   - Choose Contaier Registry from Hamburgen menu
   - Select the create Registry's Repositry and Locate the Namespace in the details Screen.
@@ -73,10 +73,12 @@ The enterprise operator downnload package (p34110382_800_Generic) has the helm f
 6. Preparation of the environment
 
 - Setup Environment Variables
-  - Open a shell terminal with helm and kubectl configured, set up the REPO and REGISTRY variables.   
+  - Open a shell terminal with helm and kubectl configured, set up the variables including - REPO, REGISTRY, TOKEN and USER
 ```
 export REPO=[Namespace]/[prefix]
 export REGISTRY=[region].ocir.io
+export TOKEN=[token]
+export DOCKERUSER=[Namespace]/oracleidentitycloudservice/[user]@[company]
 ```
 
 - Create a namespace 'mysql-operator'
@@ -86,7 +88,7 @@ kubectl create ns mysql-operator
 
 - Create Docker Registry Secret  within the namespace 'mysql-operator'
 ```
-kubectl create secret docker-registry 'mysql-registry-secret' -n mysql-operator --docker-server=[region].ocir.io --docker-username='[Namespace]/oracleidentitycloudservice/[User]@[Company]' --docker-password='[Token]'
+kubectl create secret docker-registry 'mysql-registry-secret' -n mysql-operator --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN'
 ```
 
 7. Install enterprise-operator  (package : p34110382_800_Generic)
@@ -124,8 +126,9 @@ kubectl create ns myic-demo
 
 - Create Docker Registry Secret  within the namespace 'myic-demo'
 ```
-kubectl create secret docker-registry 'mysql-registry-secret' -n myic-demo --docker-server=[region]-ocir.io --docker-username='[Namespace]/oracleidentitycloudservice/[User]@[Company]' --docker-password='[Token]'
+kubectl create secret docker-registry 'mysql-registry-secret' -n myic-demo --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN'
 ```
+
 -  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
 ```
 helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  --set image.pullSecrets.enabled=true  --set image.pullSecrets.secretName=mysql-registry-secret -f ic.values 
