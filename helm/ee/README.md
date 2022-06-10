@@ -39,14 +39,14 @@ docker tag mysql/enterprise-operator:8.0.29-2.0.4 [region].ocir.io/[Namespace]/[
 On OCI Console, notedown the following regarding registry namespace and authentication token.  
 - How can you locate the Registry Namespace?
   - Choose Contaier Registry from Hamburgen menu
-  - Select the create Registry's Ropositry and Locate the Namespace in the details Screen.
+  - Select the create Registry's Repositry and Locate the Namespace in the details Screen.
 - How can you create/locate the user name and authentication token for Registry login?
   - At the right upper corner, locate the User Profile Icon and SELECT the user profile
     - Noted down the Profile name as something similar to
       - oracleidentitycloudservice/[user]@[company]
     - On Resource menu, choose **Auth Tokens** 
       - Click **Generate Token** and fill in the Description to generate the token
-      - Note down the Token 
+      - Note down the Token  [Token]
 
 ---
 At this point, the registry is ready for installation; You have the following information :
@@ -54,7 +54,7 @@ At this point, the registry is ready for installation; You have the following in
   - Registry Namespace 
   - Auth Token
   - The region where the Registry Repositry is created
-    - e.g. for US-ASHBURN, the region is iad
+    - e.g. for US-ASHBURN, the [region] is iad.  For complete reference, you can refer to https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
       - The docker server URL for Repository is [region].ocir.io
 
 And you have created 3 Registry Repositories  
