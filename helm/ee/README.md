@@ -7,11 +7,11 @@
   - Download Docker Image for MySQL Router (mysql/enterprise-router:8.0)
   - Download Enterprise-operator packages from MOS.  It includes 2 downloads - one is Docker Image and another download is about the yaml/helm deployments
 
-2. Create Repository on OCI OKE registry
+2. Create Repository on OCI OKE registry (just put a name as [prefix])
   - For my example, the repositories include 
-    - ivanxma/enterprise-operator    (p34110324_800_Linux-x86-64)
-    - ivanxma/enterprise-server     
-    - ivanxma/enterprise-router
+    - [prefix]/enterprise-operator    (p34110324_800_Linux-x86-64)
+    - [prefix]/enterprise-server     
+    - [prefix]/enterprise-router
 
 3. On machine with docker CLI, load the images including [ enterprise--operator, enterprise-server, enterprise-router ]
 ```
@@ -22,38 +22,77 @@ docker image ls
 ```
 
 4. On OCI OKE Registry, create the repositories - including (enterprise-operator enterprise-server enterprise-router)
-  - as an example, the following repositories are created as public repository
-    - ivanxma/enterprise-operator 
-    - ivanxma/enterprise-server 
-    - ivanxma/enterprise-router
+  - as an example, 
+    - [prefix]/enterprise-operator 
+    - [prefix]/enterprise-server 
+    - [prefix]/enterprise-router
   - check the registry namespace in OCI tenancy.  
-    - as such the &lt;namespace&gt;/ivanxma is the REPO environment variable
+    - as such the &lt;namespace&gt;/[prefix] is the REPO environment variable
 
 5 On machine with docker CLI, tag the images to OCI registry accordingly  (noted : the following repository might be removed without notice)
 ```
-docker tag mysql/enterprise-server:8.0 iad.ocir.io/idazzjlcjqzj/ivanxma/enterprise-server:8.0.29
-docker tag mysql/enterprise-router:8.0 iad.ocir.io/idazzjlcjqzj/ivanxma/enterprise-router:8.0.29
-docker tag mysql/enterprise-operator:8.0.29-2.0.4 iad.ocir.io/idazzjlcjqzj/ivanxma/enterprise-operator:8.0.29-2.0.4
+docker tag mysql/enterprise-server:8.0 [region].ocir.io/[Namespace]/[prefix]/enterprise-server:8.0.29
+docker tag mysql/enterprise-router:8.0 [region].ocir.io/[Namespace]/[prefix]/enterprise-router:8.0.29
+docker tag mysql/enterprise-operator:8.0.29-2.0.4 [region].ocir.io/[Namespace]/[prefix]/enterprise-operator:8.0.29-2.0.4
 ```
+---
+On OCI Console, notedown the following regarding registry namespace and authentication token.  
+- How can you locate the Registry Namespace?
+  - Choose Contaier Registry from Hamburgen menu
+  - Select the create Registry's Ropositry and Locate the Namespace in the details Screen.
+- How can you create/locate the user name and authentication token for Registry login?
+  - At the right upper corner, locate the User Profile Icon and SELECT the user profile
+    - Noted down the Profile name as something similar to
+      - oracleidentitycloudservice/[user]@[company]
+    - On Resource menu, choose **Auth Tokens** 
+      - Click **Generate Token** and fill in the Description to generate the token
+      - Note down the Token 
 
 ---
-At this point, the registry is ready for installation.
+At this point, the registry is ready for installation; You have the following information :
+  - User Profile Identity (e.g. oracleidentitycloudservice/[user]@[company]
+  - Registry Namespace 
+  - Auth Token
+  - The region where the Registry Repositry is created
+    - e.g. for US-ASHBURN, the region is iad
+      - The docker server URL for Repository is [region].ocir.io
+
+And you have created 3 Registry Repositories  
+  - [prefix]/enterprise-server
+  - [prefix]/enterprise-router
+  - [prefix]/enterprise-operator
+
+And you have uploaded (tagged) the Docker Image for each of the repositories.
+
 
 The enterprise operator downnload package (p34110382_800_Generic) has the helm folder with the helm charts for 
   - mysql-operator-2.0.4.tgz
   - mysql-innodbcluster-2.0.4.tgz
 
+---
+6. Preparation of the environment
 
-6. Open a shell terminal with helm and kubectl configured, set up the REPO and REGISTRY variables.   For our example with public repositories setup :
+- Setup Environment Variables
+  - Open a shell terminal with helm and kubectl configured, set up the REPO and REGISTRY variables.   
 ```
-export REPO=idazzjlcjqzj/ivanxma
-export REGISTRY=iad.ocir.io
+export REPO=[Namespace]/[prefix]
+export REGISTRY=[region].ocir.io
+```
+
+- Create a namespace 'mysql-operator'
+```
+kubectl create ns mysql-operator
+```
+
+- Create Docker Registry Secret  within the namespace 'mysql-operator'
+```
+kubectl create secret docker-registry 'mysql-registry-secret' -n mysql-operator --docker-server=[region].ocir.io --docker-username='[Namespace]/oracleidentitycloudservice/[User]@[Company]' --docker-password='[Token]'
 ```
 
 7. Install enterprise-operator  (package : p34110382_800_Generic)
 ```
 cd p34110382_800_Generic/helm
-helm install mysql-operator ./mysql-operator-2.0.4.tgz -n mysql-operator --create-namespace --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullPolicy='Always'
+helm install mysql-operator ./mysql-operator-2.0.4.tgz -n mysql-operator --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullSecrets.secretName=mysql-registry-secret --set image.pullSecrets.enabled=true 
 
 kubectl get pod -n mysql-operator --watch
 ```
@@ -78,9 +117,18 @@ tls:
   useSelfSigned: true
 ```
 
+- Create namespace myic-demo
+```
+kubectl create ns myic-demo
+```
+
+- Create Docker Registry Secret  within the namespace 'myic-demo'
+```
+kubectl create secret docker-registry 'mysql-registry-secret' -n myic-demo --docker-server=[region]-ocir.io --docker-username='[Namespace]/oracleidentitycloudservice/[User]@[Company]' --docker-password='[Token]'
+```
 -  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
 ```
-helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --create-namespace --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  -f ic.values
+helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  --set image.pullSecrets.enabled=true  --set image.pullSecrets.secretName=mysql-registry-secret -f ic.values 
 ```
 
 - wait util all pods and innodb cluster are deployed, and they are online & running
@@ -95,7 +143,7 @@ kubectl get ic -n myic-demo
 
 ```
 kubectl port-forward svc/mycluster -n myic-demo 3306 &
-mysql -uroot -h127.0.0.1 -P3306 -p<the password>
+mysql -uroot -h127.0.0.1 -P3306 -p[the password]
 ```
 
 ---
