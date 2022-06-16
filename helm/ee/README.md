@@ -170,14 +170,14 @@ kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127
 
 2. Running SQL mode with MySQL Shell connecting to the 3 nodes using hostname
 ```
-kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
-kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-1.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
-kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-2.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-1.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-2.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
 ```
 
 3. Creating demo data with the Innodb Cluster
 ```
-kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "create database demo;create table demo.mytable (f1 int not null primary key, f2 varchar(20));insert into demo.mytable values (1, 'aaa');"
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "create database demo;create table demo.mytable (f1 int not null primary key, f2 varchar(20));insert into demo.mytable values (1, 'aaa');"
 ```
 
 4. Rollout restart the statefulset with mycluster
@@ -191,7 +191,7 @@ kubectl get pod -n $DEMOSPACE --watch
 - Press **CTRL-C** to cancel the 'watch'
 - Reselect the data and after all nodes restarted (recreated), data is still there
 ```
-kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname,@@port,a.* from demo.mytable;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname,@@port,a.* from demo.mytable;"
 ```
 
 5. Check IC status
@@ -206,5 +206,31 @@ kubectl logs mycluster-1 -c mysql -n $DEMOSPACE
 kubectl logs mycluster-0 -c mysql -n $DEMOSPACE
 ```
 
+7. Check Time-Zone
+```
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
+kubectl exec -it mycluster-1 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
+kubectl exec -it mycluster-2 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
+```
+and Change the time zone to +08:00
+```
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " set persist_only time_zone='+08:00';"
+kubectl exec -it mycluster-1 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " set persist_only time_zone='+08:00';"
+kubectl exec -it mycluster-2 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " set persist_only time_zone='+08:00';"
+```
+
+- Restart the Cluster
+```
+kubectl rollout restart statefulset mycluster -n $DEMOSPACE
+kubectl get pod -n $DEMOSPACE --watch
+```
+
+. wait until all pods restarted [terminated and running again ] and press **CTRL-C** to return to shell prompt
+. Check the timezone again!!!
+```
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
+kubectl exec -it mycluster-1 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
+kubectl exec -it mycluster-2 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
+```
 
 # Done - you have finished deployment using enterprise package
