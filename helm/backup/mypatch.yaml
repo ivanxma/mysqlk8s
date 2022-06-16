@@ -1,0 +1,6 @@
+spec:
+  mycnf: |
+    [mysqld]
+    default-time-zone="+08:00"
+    general-log=0
+
