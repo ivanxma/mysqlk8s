@@ -74,21 +74,26 @@ The enterprise operator downnload package (p34110382_800_Generic) has the helm f
 
 - Setup Environment Variables
   - Open a shell terminal with helm and kubectl configured, set up the variables including - REPO, REGISTRY, TOKEN and USER
-```
-export REPO=[Namespace]/[prefix]
-export REGISTRY=[region].ocir.io
-export TOKEN=[token]
-export DOCKERUSER=[Namespace]/oracleidentitycloudservice/[user]@[company]
-```
+  ```
+  export REPO=[Namespace]/[prefix]
+  export REGISTRY=[region].ocir.io
+  export TOKEN=[token]
+  export DOCKERUSER=[Namespace]/oracleidentitycloudservice/[user]@[company]
+  ```
 
-- Create a namespace 'mysql-operator'
-```
-kubectl create ns mysql-operator
-```
+  - Using a demo namespace (e.g. myic-demo)
+  ```
+  export DEMOSPACE=myic-demo
+  ```
+
+  - Create a namespace 'mysql-operator'
+  ```
+  kubectl create ns mysql-operator
+  ```
 
 - Create Docker Registry Secret  within the namespace 'mysql-operator'
 ```
-kubectl create secret docker-registry 'mysql-registry-secret' -n mysql-operator --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN'
+kubectl create secret docker-registry 'mysql-registry-secret' -n mysql-operator --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN
 ```
 
 7. Install enterprise-operator  (package : p34110382_800_Generic)
@@ -102,50 +107,55 @@ kubectl get pod -n mysql-operator --watch
 8. Install mysql-innodbcluster (package: p34110382_800_Generic)
 - Get parameters for Innodb Cluster settings   (make sure the current folder is on the helm folder)
 
-```
-cd p34110382_800_Generic/helm
-helm show values  ./mysql-operator-2.0.4.tgz > ic.values
-```
+  - switching to folder on helm from the downloaded zip
+  ```
+  cd p34110382_800_Generic/helm
+  ```
+  - Extra the configuration values from the opreator chart
+  ```
+  helm show values  ./mysql-operator-2.0.4.tgz > ic.values
+  ```
 
-- Append the following sections to ic.values (make changes to the username/password
-```
-credentials:
-  root:
-    user: root
-    password: sakila
-    host: "%"
+  - Append the following sections to ic.values (make changes to the username/password
+  ```
+  credentials:
+    root:
+      user: root
+      password: sakila
+      host: "%"
+  
+  tls:
+    useSelfSigned: true
+  ```
 
-tls:
-  useSelfSigned: true
-```
+- On Namespace $DEMOSPACE, to create registry secret and deploy InnoDB Cluster Pods
+  - Create namespace $DEMOSPACE
+  ```
+  kubectl create ns $DEMOSPACE
+  ```
 
-- Create namespace myic-demo
-```
-kubectl create ns myic-demo
-```
+  - Create Docker Registry Secret  within the namespace '$DEMOSPACE'
+  ```
+  kubectl create secret docker-registry 'mysql-registry-secret' -n $DEMOSPACE --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN
+  ```
 
-- Create Docker Registry Secret  within the namespace 'myic-demo'
-```
-kubectl create secret docker-registry 'mysql-registry-secret' -n myic-demo --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN'
-```
+  -  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
+  ```
+  helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n $DEMOSPACE --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  --set image.pullSecrets.enabled=true  --set image.pullSecrets.secretName=mysql-registry-secret -f ic.values 
+  ```
 
--  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
-```
-helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n myic-demo --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  --set image.pullSecrets.enabled=true  --set image.pullSecrets.secretName=mysql-registry-secret -f ic.values 
-```
-
-- wait util all pods and innodb cluster are deployed, and they are online & running
-```
-kubectl get pod -n myic-demo 
-kubectl get ic -n myic-demo 
-```
+  - wait util all pods and innodb cluster are deployed, and they are online & running
+  ```
+  kubectl get pod -n $DEMOSPACE 
+  kubectl get ic -n $DEMOSPACE 
+  ```
 
 9. Test mysql login
 - Using port-forward to get local 3306 port to connect to the service/mycluster (ROUTER service)
 - and Connecting to router service using mysql client.  The user/password is given in the previous appended ic.values.
 
 ```
-kubectl port-forward svc/mycluster -n myic-demo 3306 &
+kubectl port-forward svc/mycluster -n $DEMOSPACE 3306 &
 mysql -uroot -h127.0.0.1 -P3306 -p[the password]
 ```
 
@@ -154,46 +164,46 @@ mysql -uroot -h127.0.0.1 -P3306 -p[the password]
 
 1. Running mysqlsh within the container "sidecar"
 ```
-kubectl exec -it mycluster-0 -n myic-demo -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 -e " print(dba.getCluster().status())"
+kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 -e " print(dba.getCluster().status())"
 ```
 
 
 2. Running SQL mode with MySQL Shell connecting to the 3 nodes using hostname
 ```
-kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname, @@port;"
-kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-1.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname, @@port;"
-kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-2.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-1.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-2.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname, @@port;"
 ```
 
 3. Creating demo data with the Innodb Cluster
 ```
-kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.myic-demo.svc.cluster.local -e "create database demo;create table demo.mytable (f1 int not null primary key, f2 varchar(20));insert into demo.mytable values (1, 'aaa');"
+kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "create database demo;create table demo.mytable (f1 int not null primary key, f2 varchar(20));insert into demo.mytable values (1, 'aaa');"
 ```
 
 4. Rollout restart the statefulset with mycluster
 - The pod(s) will be terminated and re-initialized one by one.   
 
 ```
-kubectl get statefulset -n myic-demo
-kubectl rollout restart statefulset mycluster -n myic-demo
-kubectl get pod -n myic-demo --watch
+kubectl get statefulset -n $DEMOSPACE
+kubectl rollout restart statefulset mycluster -n $DEMOSPACE
+kubectl get pod -n $DEMOSPACE --watch
 ```
 - Press **CTRL-C** to cancel the 'watch'
 - Reselect the data and after all nodes restarted (recreated), data is still there
 ```
-kubectl exec -it mycluster-0 -n myic-demo - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.myic-demo.svc.cluster.local -e "select @@hostname,@@port,a.* from demo.mytable;"
+kubectl exec -it mycluster-0 -n $DEMOSPACE - c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname,@@port,a.* from demo.mytable;"
 ```
 
 5. Check IC status
 ```
-kubectl get ic -n myic-demo
+kubectl get ic -n $DEMOSPACE
 ```
 
 6. Showing the logs for pod (on each node)
 ```
-kubectl logs mycluster-2 -c mysql -n myic-demo
-kubectl logs mycluster-1 -c mysql -n myic-demo
-kubectl logs mycluster-0 -c mysql -n myic-demo
+kubectl logs mycluster-2 -c mysql -n $DEMOSPACE
+kubectl logs mycluster-1 -c mysql -n $DEMOSPACE
+kubectl logs mycluster-0 -c mysql -n $DEMOSPACE
 ```
 
 
