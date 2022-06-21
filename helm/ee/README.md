@@ -116,6 +116,28 @@ kubectl get pod -n mysql-operator --watch
   helm show values  ./mysql-operator-2.0.4.tgz > ic.values
   ```
 
+  - Create api credential for Object Storage access [ lookup your $HOME/.oci/config and update the corresponding info accordingly ]
+
+```
+cat << EOF|kubectl apply -n $DEMOSPACE -f -
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: backup-apikey
+stringData:
+  fingerprint: 68:....
+  passphrase : ""
+  privatekey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    [ get your private key ]
+    -----END RSA PRIVATE KEY-----
+  region: us-ashburn-1
+  tenancy: ocid1.tenancy.oc1..
+  user: ocid1.user.oc1...
+EOF
+```
+
   - Append the following sections to ic.values (make changes to the username/password
   ```
   credentials:
@@ -126,6 +148,26 @@ kubectl get pod -n mysql-operator --watch
   
   tls:
     useSelfSigned: true
+
+datadirVolumeClaimTemplate:
+  accessModes:  "ReadWriteOnce"
+  resources:
+    requests:
+      storage: 100Gi
+
+backupSchedules:
+- name: myschdule
+  schedule: "*/30 * * * *"
+  deleteBackupData: false
+  enabled: true
+
+  backupProfile:
+    dumpInstance:
+      storage:
+        ociObjectStorage:
+          prefix: mycluster-backup
+          bucketName: mybucket-operator
+          credentials: backup-apikey
   ```
 
 - On Namespace $DEMOSPACE, to create registry secret and deploy InnoDB Cluster Pods
