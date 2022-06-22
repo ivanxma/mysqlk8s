@@ -294,3 +294,5 @@ kubectl exec -it mycluster-2 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127
 ```
 
 # Done - you have finished deployment using enterprise package
+
+for more tips about troubleshooting and notes : check [here](tips.md)
