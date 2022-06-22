@@ -1,9 +1,9 @@
 # Some troubleshooting tips :
 - kubectl logs deployment/mysql-operator -n mysql-operator
-  . to show the logs for the mysql-operator deployment
+  - to show the logs for the mysql-operator deployment
 
 - kubectl edit ic mycluster -n {your namespace]    
-  . change the ic definition.   You may want to remove the line finalizer when there is hang with deletion.  In particularly, when you have failure with install and node is not up and running then you are trying to delete.  kopf will continue to connect to non-exists node and termination cannot be finalized.   So you need to remove the finalizer.
+  - change the ic definition.   You may want to remove the line finalizer when there is hang with deletion.  In particularly, when you have failure with install and node is not up and running then you are trying to delete.  kopf will continue to connect to non-exists node and termination cannot be finalized.   So you need to remove the finalizer.
   ```
   # kubectl get ic -n mydemo
   NAME        STATUS   ONLINE   INSTANCES   ROUTERS   AGE
