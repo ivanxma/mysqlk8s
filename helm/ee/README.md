@@ -97,12 +97,20 @@ kubectl create secret docker-registry 'mysql-registry-secret' -n mysql-operator 
 ```
 
 7. Install enterprise-operator  (package : p34110382_800_Generic)
+- Switch to the helm folder
 ```
 cd p34110382_800_Generic/helm
-helm install mysql-operator ./mysql-operator-2.0.4.tgz -n mysql-operator --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullSecrets.secretName=mysql-registry-secret --set image.pullSecrets.enabled=true 
+```
 
+- Install mysql-operator
+```
+helm install mysql-operator ./mysql-operator-2.0.4.tgz -n mysql-operator --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullSecrets.secretName=mysql-registry-secret --set image.pullSecrets.enabled=true 
+```
+- Check the status 
+```
 kubectl get pod -n mysql-operator --watch
 ```
+Press **CTRL-C** to stop watching 
 
 8. Install mysql-innodbcluster (package: p34110382_800_Generic)
 - Get parameters for Innodb Cluster settings   (make sure the current folder is on the helm folder)
@@ -111,32 +119,32 @@ kubectl get pod -n mysql-operator --watch
   ```
   cd p34110382_800_Generic/helm
   ```
-  - Extra the configuration values from the opreator chart
+
+  - Extract the configuration values from the mysql-opreator chart
   ```
   helm show values  ./mysql-operator-2.0.4.tgz > ic.values
   ```
 
   - Create api credential for Object Storage access [ lookup your $HOME/.oci/config and update the corresponding info accordingly ]
-
-```
-cat << EOF|kubectl apply -n $DEMOSPACE -f -
-apiVersion: v1
-kind: Secret
-type: Opaque
-metadata:
-  name: backup-apikey
-stringData:
-  fingerprint: 68:....
-  passphrase : ""
-  privatekey: |
-    -----BEGIN RSA PRIVATE KEY-----
-    [ get your private key ]
-    -----END RSA PRIVATE KEY-----
-  region: us-ashburn-1
-  tenancy: ocid1.tenancy.oc1..
-  user: ocid1.user.oc1...
-EOF
-```
+  ```
+  cat << EOF|kubectl apply -n $DEMOSPACE -f -
+  apiVersion: v1
+  kind: Secret
+  type: Opaque
+  metadata:
+    name: backup-apikey
+  stringData:
+    fingerprint: 68:....
+    passphrase : ""
+    privatekey: |
+      -----BEGIN RSA PRIVATE KEY-----
+      [ get your private key ]
+      -----END RSA PRIVATE KEY-----
+    region: us-ashburn-1
+    tenancy: ocid1.tenancy.oc1..
+    user: ocid1.user.oc1...
+  EOF
+  ```
 
   - Append the following sections to ic.values (make changes to the username/password
   ```
@@ -149,26 +157,32 @@ EOF
   tls:
     useSelfSigned: true
 
-datadirVolumeClaimTemplate:
-  accessModes:  "ReadWriteOnce"
-  resources:
-    requests:
-      storage: 100Gi
-
-backupSchedules:
-- name: myschdule
-  schedule: "*/30 * * * *"
-  deleteBackupData: false
-  enabled: true
-
-  backupProfile:
-    dumpInstance:
-      storage:
-        ociObjectStorage:
-          prefix: mycluster-backup
-          bucketName: mybucket-operator
-          credentials: backup-apikey
+  datadirVolumeClaimTemplate:
+    accessModes:  "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 100Gi
+  
+  backupSchedules:
+  - name: myschdule
+    schedule: "*/30 * * * *"
+    deleteBackupData: false
+    enabled: true
+  
+    backupProfile:
+      dumpInstance:
+        storage:
+          ociObjectStorage:
+            prefix: mycluster-backup
+            bucketName: mybucket-operator
+            credentials: backup-apikey
   ```
+
+  Backup Profile [dumpInstance] is created to dump data on to Object Storage on OCI.
+  The ic.values contains the value about the credential to login to OCI and the bucketName - mybucket-operator
+
+  - Login to OCI consolde and Choose **Object Storage** from Storage Menu.
+  - Create bucket "mybucket-operator" - under the compartment defined by the credentials. 
 
 - On Namespace $DEMOSPACE, to create registry secret and deploy InnoDB Cluster Pods
   - Create namespace $DEMOSPACE
@@ -186,10 +200,12 @@ backupSchedules:
   helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n $DEMOSPACE --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  --set image.pullSecrets.enabled=true  --set image.pullSecrets.secretName=mysql-registry-secret -f ic.values 
   ```
 
-  - wait util all pods and innodb cluster are deployed, and they are online & running
+  - wait util all pods and innodb cluster are deployed. Check status with the deployed pods/deployment and cronjob.
   ```
   kubectl get pod -n $DEMOSPACE 
   kubectl get ic -n $DEMOSPACE 
+  kubectl get cronjob -n $DEMOSPACE
+  kubectl describe cronjob/mycluster-myschdule-cb -n $DEMOSPACE
   ```
 
 9. Test mysql login
@@ -230,22 +246,24 @@ kubectl get statefulset -n $DEMOSPACE
 kubectl rollout restart statefulset mycluster -n $DEMOSPACE
 kubectl get pod -n $DEMOSPACE --watch
 ```
-- Press **CTRL-C** to cancel the 'watch'
+Press **CTRL-C** to cancel the 'watch'
+
 - Reselect the data and after all nodes restarted (recreated), data is still there
 ```
 kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh --sql -uroot -psakila -hmycluster-0.mycluster-instances.$DEMOSPACE.svc.cluster.local -e "select @@hostname,@@port,a.* from demo.mytable;"
 ```
 
-5. Check IC status
+5. Check innodb cluster status
 ```
 kubectl get ic -n $DEMOSPACE
 ```
 
-6. Showing the logs for pod (on each node)
+6. Showing the logs 
 ```
 kubectl logs mycluster-2 -c mysql -n $DEMOSPACE
 kubectl logs mycluster-1 -c mysql -n $DEMOSPACE
 kubectl logs mycluster-0 -c mysql -n $DEMOSPACE
+kubectl logs deployment/mysql-operator -n mysql-operator
 ```
 
 7. Check Time-Zone
@@ -266,9 +284,9 @@ kubectl exec -it mycluster-2 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127
 kubectl rollout restart statefulset mycluster -n $DEMOSPACE
 kubectl get pod -n $DEMOSPACE --watch
 ```
+Wait until all pods restarted [terminated and running again ] and press **CTRL-C** to stop watching
 
-. wait until all pods restarted [terminated and running again ] and press **CTRL-C** to return to shell prompt
-. Check the timezone again!!!
+- Check the timezone again!!!
 ```
 kubectl exec -it mycluster-0 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
 kubectl exec -it mycluster-1 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
