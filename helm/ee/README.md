@@ -79,6 +79,7 @@ The enterprise operator downnload package (p34110382_800_Generic) has the helm f
   export REGISTRY=[region].ocir.io
   export TOKEN=[token]
   export DOCKERUSER=[Namespace]/oracleidentitycloudservice/[user]@[company]
+  export BUCKETNAME=mybucket-operator
   ```
 
   - Using a demo namespace (e.g. myic-demo)
@@ -106,6 +107,7 @@ cd p34110382_800_Generic/helm
 ```
 helm install mysql-operator ./mysql-operator-2.0.4.tgz -n mysql-operator --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullSecrets.secretName=mysql-registry-secret --set image.pullSecrets.enabled=true 
 ```
+
 - Check the status 
 ```
 kubectl get pod -n mysql-operator --watch
@@ -146,7 +148,7 @@ Press **CTRL-C** to stop watching
   EOF
   ```
 
-  - Append the following sections to ic.values (make changes to the username/password
+  - Append the following sections to ic.values (make changes to include the username/password )
   ```
   credentials:
     root:
@@ -156,13 +158,19 @@ Press **CTRL-C** to stop watching
   
   tls:
     useSelfSigned: true
+  ```
 
+  - Append the following sections to ic.values (make changes to include the datadir PVC storage)
+  ```
   datadirVolumeClaimTemplate:
     accessModes:  "ReadWriteOnce"
     resources:
       requests:
         storage: 100Gi
+  ```
   
+  - Append the following sections to ic.values (make changes [BUCKETNAME] to include the backup schedule)
+  ```
   backupSchedules:
   - name: myschdule
     schedule: "*/30 * * * *"
@@ -174,9 +182,24 @@ Press **CTRL-C** to stop watching
         storage:
           ociObjectStorage:
             prefix: mycluster-backup
-            bucketName: mybucket-operator
+            bucketName: [BUCKETNAME]
             credentials: backup-apikey
   ```
+
+  - Append the following sections to ic.values (make changes [REGISTRY], [Namespace], [Prefix] to include the backup schedule)
+  ```
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets:
+      enabled: true
+      secretName: mysql-registry-secret
+  
+  envs:
+      imagesPullPolicy: IfNotPresent
+      imagesDefaultRegistry: [REGISTRY]
+      imagesDefaultRepository: [Namespace]/[Prefix]
+  ```
+
 
   Backup Profile [dumpInstance] is created to dump data on to Object Storage on OCI.
   The ic.values contains the value about the credential to login to OCI and the bucketName - mybucket-operator
@@ -197,7 +220,7 @@ Press **CTRL-C** to stop watching
 
   -  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
   ```
-  helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n $DEMOSPACE --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO"  --set image.pullSecrets.enabled=true  --set image.pullSecrets.secretName=mysql-registry-secret -f ic.values 
+  helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n $DEMOSPACE -f ic.values 
   ```
 
   - wait util all pods and innodb cluster are deployed. Check status with the deployed pods/deployment and cronjob.
@@ -294,5 +317,5 @@ kubectl exec -it mycluster-2 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127
 ```
 
 # Done - you have finished deployment using enterprise package
-
-for more tips about troubleshooting and notes : check [here](tips.md)
+---
+For more tips about troubleshooting and notes : check [here](tips.md)
