@@ -32,19 +32,35 @@
     . to login bash with the pod mycluster-0 on container 'sidecar'
 
 - kubectl rollout restart statefulsets mycluster -n [namespace]
-  - To restart whole cluster
+  - to restart whole cluster
+
+- helm list --all-namespaces
+  - to show all the helm application in all namespaces  
+
+- helm list -n [your namespace]
+  - to list only the application in your namespace
+
+---
+
+## Scenarios 
+
+### --dry-run with helm does not interact with the kubernetes cluster
+- Even though you may have the secret object created, the error message is still there.   The template has the lookup function to check if there is any valid secret object in the namespace.
+```
+helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -f ic.values -n mydemo --dry-run
+Error: INSTALLATION FAILED: execution error at (mysql-innodbcluster/templates/service_account_cluster.yaml:16:8): image.pullSecrets.secretName: secret 'mysql-registry-secret' not found in namespace 'mydemo'
+```
+
+### When you delete innodb cluster using helm e.g. helm delete mycluster -n [your namespace],
+###   the cronjob configured with schedule backup is still there.  You may want to remove it.
+```
+kubectl get cronjob -n [your namespace]
+kubectl delete cronjob [the job] -n [your namespace]
+```
 
 
 
 
-
-
-
-
-
-
-
-Reply…
 
 
 
