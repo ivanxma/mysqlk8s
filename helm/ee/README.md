@@ -127,27 +127,6 @@ Press **CTRL-C** to stop watching
   helm show values  ./mysql-operator-2.0.4.tgz > ic.values
   ```
 
-  - Create api credential for Object Storage access [ lookup your $HOME/.oci/config and update the corresponding info accordingly ]
-  ```
-  cat << EOF|kubectl apply -n $DEMOSPACE -f -
-  apiVersion: v1
-  kind: Secret
-  type: Opaque
-  metadata:
-    name: backup-apikey
-  stringData:
-    fingerprint: 68:....
-    passphrase : ""
-    privatekey: |
-      -----BEGIN RSA PRIVATE KEY-----
-      [ get your private key ]
-      -----END RSA PRIVATE KEY-----
-    region: us-ashburn-1
-    tenancy: ocid1.tenancy.oc1..
-    user: ocid1.user.oc1...
-  EOF
-  ```
-
   - Append the following sections to ic.values (make changes to include the username/password )
   ```
   credentials:
@@ -216,6 +195,27 @@ Press **CTRL-C** to stop watching
   - Create Docker Registry Secret  within the namespace '$DEMOSPACE'
   ```
   kubectl create secret docker-registry 'mysql-registry-secret' -n $DEMOSPACE --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN
+  ```
+
+  - Create api credential for Object Storage access [ lookup your $HOME/.oci/config and update the corresponding info accordingly ]
+  ```
+  cat << EOF|kubectl apply -n $DEMOSPACE -f -
+  apiVersion: v1
+  kind: Secret
+  type: Opaque
+  metadata:
+    name: backup-apikey
+  stringData:
+    fingerprint: 68:....
+    passphrase : ""
+    privatekey: |
+      -----BEGIN RSA PRIVATE KEY-----
+      [ get your private key ]
+      -----END RSA PRIVATE KEY-----
+    region: us-ashburn-1
+    tenancy: ocid1.tenancy.oc1..
+    user: ocid1.user.oc1...
+  EOF
   ```
 
   -  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
