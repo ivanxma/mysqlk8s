@@ -11,25 +11,28 @@
   ```
 
 - kubectl rollout restart deployment mysql-operator -n mysql-operator 
-  . when you have a stucked operation in mysql-operator.  Any further IC creation will just be stopped.  The kubectl get ic -n <namespace> will show the entry but no number with online [ not even a 0 ].   Restart the mysql-operator will make it continue.
+  - when you have a stucked operation in mysql-operator.  Any further IC creation will just be stopped.  The kubectl get ic -n <namespace> will show the entry but no number with online [ not even a 0 ].   Restart the mysql-operator will make it continue.
 
 - kubectl logs statefulsets mycluster -n [your namespace] 
-  .  to show directly the mycluster-0 logs.
+  - to show directly the mycluster-0 logs.
 
 - kubectl get cronjob -n <namespace>  
-  . to show if the backup schedule job if it is created.
+  - to show if the backup schedule job if it is created.
 
 - kubectl edit cronjob <the cronjob> -n <namespace>  
-  . to edit the schdule  [the patching / or edit the ic for schedule does not take any effect
+  - to edit the schdule  [the patching / or edit the ic for schedule does not take any effect
 
 - kubectl edit ic mycluster -n <namespace> 
-  . to make changes on the ic configuration.  Some may be ignored <e.g. mycnf or schedule,etc..>
+  - to make changes on the ic configuration.  Some may be ignored <e.g. mycnf or schedule,etc..>
 
 - Login to pod container sidecar / mysql
   - kubectl exec -it mycluster-0 -c mysql -n <namespace> -- bash  
     . to login bash with the pod mycluster-0 on container 'mysql'
   - kubectl exec -it mycluster-0 -c sidecar -n <namespace> -- bash  
     . to login bash with the pod mycluster-0 on container 'sidecar'
+
+- kubectl rollout restart statefulsets mycluster -n [namespace]
+  - To restart whole cluster
 
 
 
