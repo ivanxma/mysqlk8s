@@ -23,7 +23,7 @@
   - to edit the schdule  [the patching / or edit the ic for schedule does not take any effect
 
 - kubectl edit ic mycluster -n [namespace]
-  - to make changes on the ic configuration.  Some may be ignored [e.g. mycnf or schedule,etc..]
+  - to make changes on the ic configuration.  Some may be ignored [e.g. mycnf ]
 
 - Login to pod container sidecar / mysql
   - kubectl exec -it mycluster-0 -c mysql -n [namespace] -- bash  
