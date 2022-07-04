@@ -52,16 +52,19 @@ Error: INSTALLATION FAILED: execution error at (mysql-innodbcluster/templates/se
 ```
 
 ### When you delete innodb cluster using helm e.g. helm delete mycluster -n [your namespace],
-###   the cronjob configured with schedule backup is still there.  You may want to remove it.
+###   if the cronjob configured with schedule backup is still there.  You may want to remove it.
 ```
 kubectl get cronjob -n [your namespace]
 kubectl delete cronjob [the job] -n [your namespace]
 ```
 
+### If there are many job.batch with Completed status, it can be a long list and you want to remove them
+```
+kubectl delete jobs --field-selector status.successful=1 -n [your namespace]
+```
 
+### If ic status as INITIALIZING for long time and pods (mycluster-0, mycluster-1, mycluster-2) pods are running with router pod not running, check the following
 
-
-
-
-
+  - If the pvc under the [namespace] was not clean up with previous installed innodb cluster, the re-installation of innodb cluster will reuse the same pvc/pv.  This is because deletion of Innodb cluster does not remove pvc.   Therefore, you need to delete the innodb cluster again and clean up the pvc.  With clean environment, you can reinstall Innodb cluster again
+  - To delete IC which it is hanging.  You need to remove the finalizer from IC defintion for your namespace
 
