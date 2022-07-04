@@ -316,6 +316,54 @@ kubectl exec -it mycluster-1 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127
 kubectl exec -it mycluster-2 -n $DEMOSPACE -c sidecar -- mysqlsh root:sakila@127.0.0.1:3306 --sql -e " select @@hostname, @@time_zone;"
 ```
 
+
+8. Deletion of Innodb Cluster
+The deletion of Innodb Cluster (ic) using helm thru 'delete' command.   Please wait and check all resource to be deleted.
+The presistent volumn claim (pvc) MUST be removed after the deletion.  
+
+```
+helm delete mycluster -n $DEMOSPACE
+```
+
+- Check if all pods, cronjob and ic removed
+```
+kubectl get pod -n $DEMOSPACE --watch
+kubectl get ic -n $DEMOSPACE
+kubectl get cronjob -n $DEMOSPACE
+kubectl get pvc -n $DEMOSPACE
+```
+  - The pvc is always available and you need to remove it in the next step.
+
+
+- Remove the Presistent Volumn Claim
+```
+kubectl delete pvc datadir-mycluster-0 -n $DEMOSPACE
+kubectl delete pvc datadir-mycluster-1 -n $DEMOSPACE
+kubectl delete pvc datadir-mycluster-2 -n $DEMOSPACE
+```
+
+Deletion of registry secret and backup-api-key can be done as follows
+
+- listing the secret with namespace $DEMOSPACE
+```
+kubectl get secret -n $DEMOSPACE
+```
+
+- delete the registry secret created previously named as mysql-registry-secret
+```
+kubectl delete mysql-registry-secret -n $DEMOSPACE
+```
+
+- delete the backup api key created previously named as backup-apikey
+```
+kubectl delete backup-apikey -n $DEMOSPACE
+```
+
+- delete finished jobs
+```
+kubectl delete jobs --field-selector status.successful=1 -n $DEMOSPACE
+```
+
 # Done - you have finished deployment using enterprise package
 ---
 For more tips about troubleshooting and notes : check [here](tips.md)
