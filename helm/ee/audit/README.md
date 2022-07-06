@@ -1,7 +1,8 @@
-# This demo is to install AUDIT plugin in MySQL InnoDB Cluster created from MySQL Operator
-##  assuming a running cluster - 'mycluster' in namespace as "mydemo"
+# This demo is to install AUDIT plugin 
+##  in MySQL InnoDB Cluster created from MySQL Operator
+##  Assuming a running cluster as "mycluster" in namespace as "mydemo"
 
-### Setup env DEMOSPACE as mydemo and CLUSTERNAME as 'mycluster
+### Setup env DEMOSPACE as "mydemo" and CLUSTERNAME as "mycluster"
 ```
 export DEMOSPACE=mydemo
 export CLUSTERNAME=mycluster
@@ -49,6 +50,19 @@ kubectl exec -it ${CLUSTERNAME}-0 -n ${DEMOSPACE} -c mysql -- sh -c "cat  /var/l
 kubectl exec -it ${CLUSTERNAME}-1 -n ${DEMOSPACE} -c mysql -- sh -c "cat  /var/lib/mysql/audit.log"
 kubectl exec -it ${CLUSTERNAME}-2 -n ${DEMOSPACE} -c mysql -- sh -c "cat  /var/lib/mysql/audit.log"
 ```
+
+### Scaling the Cluster from 3 to 5
+```
+kubectl edit ic ${CLUSTERNAME} -n ${DEMOSPACE}
+```
+- replace "instances: 3" as "instances: 5"
+- Save it and quit edit
+- Note the change the IC Online status and the number of instance grows from 3 to 5
+```
+kubectl get ic ${CLUSTERNAME} -n ${DEMOSPACE}
+```
+
+- At this point, if all is online, you will be able to find node 4 and node 5 having the audit installed and running as secondary nodes in the cluster.
 
 
 
