@@ -2,7 +2,7 @@
 ##  in MySQL InnoDB Cluster created from MySQL Operator
 ##  Assuming a running cluster as "mycluster" in namespace as "mydemo"
 
-### Setup env DEMOSPACE as "mydemo" and CLUSTERNAME as "mycluster"
+- Setup env DEMOSPACE as "mydemo" and CLUSTERNAME as "mycluster"
 ```
 export DEMOSPACE=mydemo
 export CLUSTERNAME=mycluster
