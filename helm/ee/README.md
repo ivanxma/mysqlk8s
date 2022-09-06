@@ -1,11 +1,20 @@
-# Install MySQL Operator for Kubernetes
+# Install MySQL Operator for Kubernetes [8.0.30-2.0.6]
 # This is the demo tutorial for the installation of enterprise-operator, enterprise-server, enterprise-router
 #
 ## Steps
 1. Download Docker Image from MOS
-  - Download Docker Image for MySQL Server (mysql/enterprise-server:8.0)
-  - Download Docker Image for MySQL Router (mysql/enterprise-router:8.0)
-  - Download Enterprise-operator packages from MOS.  It includes 2 downloads - one is Docker Image and another download is about the yaml/helm deployments
+  - Login to https://support.oracle.com and Download
+    - MySQL Commercial Server 8.0.30 Docker Image TAR for Generic Linux x86 (64bit) (Patchset)
+      - This includes the MySQL Server and MySQL Router Docker Images
+      - Download Docker Image for MySQL Server (mysql/enterprise-server:8.0)
+      - Download Docker Image for MySQL Router (mysql/enterprise-router:8.0)
+    - Download Enterprise-operator packages from MOS.  
+      - It includes 2 downloads - one is Docker Image and another download is about the yaml/helm deployments
+    - For 8.0.30-2.0.6 :
+      - Patch ID : 34421881	MySQL Commercial Server 8.0.30 Docker Image TAR for Generic Linux x86 (64bit) (Patchset)
+      - Patch ID : 34563969	MySQL Operator 8.0.30-2.0.6 Docker Image TAR for Generic Linux x86 (64bit) (Patchset)
+      - Patch ID : 34563968	MySQL Operator 8.0.30-2.0.6 YAML+HELM for Generic Platform (Patchset)
+
 
 2. Create Repository on OCI OKE registry (just put a name as [prefix])
   - For my example, the repositories include 
@@ -14,10 +23,19 @@
     - [prefix]/enterprise-router
 
 3. On machine with docker CLI, load the images including [ enterprise--operator, enterprise-server, enterprise-router ]
+  - unzip the Downloaded MySQL Server and MySQL Router Packages [34421881] and using docker CLI to load the images
 ```
-docker load -i ./mysql-enterprise-router-8.0.29.tar
-docker load -i ./mysql-enterprise-server-8.0.29.tar
-docker load -i ./mysql-enterprise-operator_8.0.29-2.0.4.tar
+docker load -i ./mysql-enterprise-router-8.0.30.tar
+docker load -i ./mysql-enterprise-server-8.0.30.tar
+```
+
+  - unzip the Downloaded MySQL Operator Package [34563969] and using docker CLI to load the images
+```
+docker load -i ./mysql-enterprise-operator-8.0.30-2.0.6-docker.tar.g
+```
+
+  - to show image loaded and tag to the docker
+```
 docker image ls
 ```
 
@@ -31,9 +49,9 @@ docker image ls
 
 5 On machine with docker CLI, tag the images to OCI registry accordingly  (noted : the following repository might be removed without notice)
 ```
-docker tag mysql/enterprise-server:8.0 [region].ocir.io/[Namespace]/[prefix]/enterprise-server:8.0.29
-docker tag mysql/enterprise-router:8.0 [region].ocir.io/[Namespace]/[prefix]/enterprise-router:8.0.29
-docker tag mysql/enterprise-operator:8.0.29-2.0.4 [region].ocir.io/[Namespace]/[prefix]/enterprise-operator:8.0.29-2.0.4
+docker tag mysql/enterprise-server:8.0 [region].ocir.io/[Namespace]/[prefix]/enterprise-server:8.0.30
+docker tag mysql/enterprise-router:8.0 [region].ocir.io/[Namespace]/[prefix]/enterprise-router:8.0.30
+docker tag mysql/enterprise-operator:8.0.30-2.0.6 [region].ocir.io/[Namespace]/[prefix]/enterprise-operator:8.0.30-2.0.6
 ```
 ---
 On OCI Console, note down the following regarding registry namespace and authentication token.  
@@ -48,6 +66,20 @@ On OCI Console, note down the following regarding registry namespace and authent
       - Click **Generate Token** and fill in the Description to generate the token
       - Note down the Token  [Token]
 
+On machine with docker CLI, login REPO and provide the Token info as password
+```
+docker login [region].ocir.io 
+```
+-  (e.g. docker login iad.ocir.io)
+
+And using the docker CLI to push the image to Registry
+```
+docker push [region].ocir.io/[Namespace]/[prefix]/enterprise-server:8.0.30
+docker push [region].ocir.io/[Namespace]/[prefix]/enterprise-router:8.0.30
+docker pus [region].ocir.io/[Namespace]/[prefix]/enterprise-operator:8.0.30-2.0.6
+```
+
+
 ---
 At this point, the registry is ready for installation; You have the following information :
   - User Profile Identity (e.g. oracleidentitycloudservice/[user]@[company]
@@ -57,17 +89,15 @@ At this point, the registry is ready for installation; You have the following in
     - e.g. for US-ASHBURN, the [region] is iad.  For complete reference, you can refer to https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
       - The docker server URL for Repository is [region].ocir.io
 
-And you have created 3 Registry Repositories  
+And 3 Registry Repositories are created (with uploaded 8.0.30 images)
   - [prefix]/enterprise-server
   - [prefix]/enterprise-router
   - [prefix]/enterprise-operator
 
-And you have uploaded (tagged) the Docker Image for each of the repositories.
 
-
-The enterprise operator downnload package (p34110382_800_Generic) has the helm folder with the helm charts for 
-  - mysql-operator-2.0.4.tgz
-  - mysql-innodbcluster-2.0.4.tgz
+The enterprise operator downnload package (p34563968_800_Generic) has the helm folder with the helm charts for 
+  - mysql-operator-2.0.6.tgz
+  - mysql-innodbcluster-2.0.6.tgz
 
 ---
 6. Preparation of the environment
@@ -97,15 +127,15 @@ The enterprise operator downnload package (p34110382_800_Generic) has the helm f
 kubectl create secret docker-registry 'mysql-registry-secret' -n mysql-operator --docker-server=$REGISTRY --docker-username=$DOCKERUSER --docker-password=$TOKEN
 ```
 
-7. Install enterprise-operator  (package : p34110382_800_Generic)
+7. Install enterprise-operator  (package : p34563968_800_Generic)
 - Switch to the helm folder
 ```
-cd p34110382_800_Generic/helm
+cd p34563968_800_Generic/helm
 ```
 
 - Install mysql-operator
 ```
-helm install mysql-operator ./mysql-operator-2.0.4.tgz -n mysql-operator --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullSecrets.secretName=mysql-registry-secret --set image.pullSecrets.enabled=true 
+helm install mysql-operator ./mysql-operator-2.0.6.tgz -n mysql-operator --set image.registry=$REGISTRY --set image.repository=$REPO --set envs.imagesDefaultRegistry="$REGISTRY" --set envs.imagesDefaultRepository="$REPO" --set image.pullSecrets.secretName=mysql-registry-secret --set image.pullSecrets.enabled=true --set image.name="enterprise-operator"
 ```
 
 - Check the status 
@@ -124,7 +154,7 @@ Press **CTRL-C** to stop watching
 
   - Extract the configuration values from the mysql-opreator chart
   ```
-  helm show values  ./mysql-operator-2.0.4.tgz > ic.values
+  helm show values  ./mysql-operator-2.0.6.tgz > ic.values
   ```
 
   - Append the following sections to ic.values (make changes to include the username/password )
@@ -220,7 +250,7 @@ Press **CTRL-C** to stop watching
 
   -  Install Innodb cluster with name as 'mycluster' using the helm chart + modified ic.values parameters
   ```
-  helm install mycluster ./mysql-innodbcluster-2.0.4.tgz -n $DEMOSPACE -f ic.values 
+  helm install mycluster ./mysql-innodbcluster-2.0.6.tgz -n $DEMOSPACE -f ic.values 
   ```
 
   - wait util all pods and innodb cluster are deployed. Check status with the deployed pods/deployment and cronjob.
