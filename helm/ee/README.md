@@ -76,7 +76,7 @@ And using the docker CLI to push the image to Registry
 ```
 docker push [region].ocir.io/[Namespace]/[prefix]/enterprise-server:8.0.30
 docker push [region].ocir.io/[Namespace]/[prefix]/enterprise-router:8.0.30
-docker pus [region].ocir.io/[Namespace]/[prefix]/enterprise-operator:8.0.30-2.0.6
+docker push [region].ocir.io/[Namespace]/[prefix]/enterprise-operator:8.0.30-2.0.6
 ```
 
 
