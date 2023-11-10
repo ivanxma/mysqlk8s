@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jupyterlab-pvc
+  namespace: hklab2
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: oci
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyterlab
+  namespace: hklab2
+  labels:
+    name: jupyterlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: jupyterlab
+  template:
+    metadata:
+      labels:
+        name: jupyterlab
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: myapp
+                operator: In
+                values:
+                - jupyter
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
+      initContainers:
+      - name: hklab2-init
+        image: jupyter/datascience-notebook:latest
+        command: [ 'sh', '-c', 'chmod -R 777 /home/jovyan']
+        volumeMounts:
+          - name: jupyterlab-data
+            mountPath: /home/jovyan
+      containers:
+        - name: jupyterlab
+          image: jupyter/datascience-notebook:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 8888
+          command:
+            - /bin/bash
+            - -c
+            - |
+              start.sh jupyter lab --LabApp.token='password' --LabApp.ip='0.0.0.0' --LabApp.allow_root=True
+          volumeMounts:
+            - name: jupyterlab-data
+              mountPath: /home/jovyan
+      restartPolicy: Always
+      volumes:
+      - name: jupyterlab-data
+        persistentVolumeClaim:
+          claimName: jupyterlab-pvc
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyterlab
+  namespace: hklab2
+  labels:
+    name: jupyterlab
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8888
+      protocol: TCP
+      name: http
+  selector:
+    name: jupyterlab
