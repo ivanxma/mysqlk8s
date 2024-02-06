@@ -31,6 +31,8 @@ imagePullSecrets: []
 # ConfigurableHTTPProxy speaks with the actual ConfigurableHTTPProxy server in
 # the proxy pod.
 hub:
+  adminUser: myadmin
+  password: hklab-password
   revisionHistoryLimit:
   config:
     JupyterHub:
